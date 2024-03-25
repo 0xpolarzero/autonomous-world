@@ -9,7 +9,7 @@
  * - latticeTestnet, our public test network.
  *
  */
-import { MUDChain, latticeTestnet, mudFoundry } from "@latticexyz/common/chains";
+import { latticeTestnet, MUDChain, mudFoundry } from '@latticexyz/common/chains';
 
 /*
  * See https://mud.dev/tutorials/minimal/deploy#run-the-user-interface

@@ -12,14 +12,13 @@
  * See https://mud.dev/tutorials/minimal/deploy#wallet-managed-address
  * for how to use the user's own address instead.
  */
-import { getBurnerPrivateKey } from "@latticexyz/common";
-
+import { getBurnerPrivateKey } from '@latticexyz/common';
 /*
  * Import the addresses of the World, possibly on multiple chains,
  * from packages/contracts/worlds.json. When the contracts package
  * deploys a new `World`, it updates this file.
  */
-import worlds from "contracts/worlds.json";
+import worlds from 'contracts/worlds.json';
 
 /*
  * The supported chains.
@@ -34,7 +33,7 @@ import worlds from "contracts/worlds.json";
  * See https://mud.dev/tutorials/minimal/deploy#run-the-user-interface
  * for instructions on how to add networks.
  */
-import { supportedChains } from "./supportedChains";
+import { supportedChains } from './supportedChains';
 
 /*
  * This is the function that does the actual work.
@@ -50,7 +49,7 @@ export async function getNetworkConfig() {
    *    vite dev server was started or client was built
    * 4. The default, 31337 (anvil)
    */
-  const chainId = Number(params.get("chainId") || params.get("chainid") || import.meta.env.VITE_CHAIN_ID || 31337);
+  const chainId = Number(params.get('chainId') || params.get('chainid') || import.meta.env.VITE_CHAIN_ID || 31337);
 
   /*
    * Find the chain (unless it isn't in the list of supported chains).
@@ -67,7 +66,7 @@ export async function getNetworkConfig() {
    * provide it as worldAddress in the query string.
    */
   const world = worlds[chain.id.toString()];
-  const worldAddress = params.get("worldAddress") || world?.address;
+  const worldAddress = params.get('worldAddress') || world?.address;
   if (!worldAddress) {
     throw new Error(`No world address found for chain ${chainId}. Did you run \`mud deploy\`?`);
   }
@@ -79,15 +78,15 @@ export async function getNetworkConfig() {
    * on the URL (as initialBlockNumber) or in the worlds.json
    * file. If neither has it, it starts at the first block, zero.
    */
-  const initialBlockNumber = params.has("initialBlockNumber")
-    ? Number(params.get("initialBlockNumber"))
+  const initialBlockNumber = params.has('initialBlockNumber')
+    ? Number(params.get('initialBlockNumber'))
     : world?.blockNumber ?? 0n;
 
   return {
     privateKey: getBurnerPrivateKey(),
     chainId,
     chain,
-    faucetServiceUrl: params.get("faucet") ?? chain.faucetUrl,
+    faucetServiceUrl: params.get('faucet') ?? chain.faucetUrl,
     worldAddress,
     initialBlockNumber,
   };

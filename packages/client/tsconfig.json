@@ -4,16 +4,23 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ESNext", "DOM"],
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "moduleResolution": "Node",
     "strict": true,
     "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
     "isolatedModules": true,
-    "esModuleInterop": true,
+    "esModuleInterop": false,
     "noEmit": true,
     "skipLibCheck": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "react"
+    "jsxImportSource": "react",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "vite.config.ts"],
+  "exclude": ["node_modules"]
 }

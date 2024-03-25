@@ -1,7 +1,42 @@
 {
-  "extends": ["../../.eslintrc", "plugin:react/recommended", "plugin:react-hooks/recommended"],
-  "plugins": ["react", "react-hooks"],
+  "extends": [
+    "../../.eslintrc",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended",
+    "plugin:tailwindcss/recommended",
+    "prettier",
+  ],
+  "plugins": ["react", "react-hooks", "prettier", "tailwindcss"],
   "rules": {
-    "react/react-in-jsx-scope": "off"
-  }
+    "no-console": "warn",
+    "@typescript-eslint/no-var-requires": "off",
+    "no-var": "error",
+    "no-html-link-for-pages": "off",
+    "linebreak-style": ["error", "unix"],
+    "quotes": ["error", "single", { "avoidEscape": true }],
+    "semi": ["error", "always"],
+    "comma-dangle": [2, "always-multiline"],
+    "react/react-in-jsx-scope": "off",
+    "prettier/prettier": "error",
+    "indent": "off",
+    "tailwindcss/no-custom-classname": "off",
+    // v eslint is wrong on these
+    "tailwindcss/classnames-order": "off",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-empty-interface": "off",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/no-var-requires": "off",
+  },
+  "settings": {
+    "tailwindcss": {
+      "callees": ["cn", "cva"],
+      "config": "tailwind.config.js",
+    },
+    "next": {
+      "rootDir": "./src/",
+    },
+  },
+  "parserOptions": {
+    "sourceType": "module",
+  },
 }
