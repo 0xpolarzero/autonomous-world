@@ -4,9 +4,11 @@
  */
 
 import { getComponentValue } from '@latticexyz/recs';
+import { singletonEntity } from '@latticexyz/store-sync/recs';
 
-import { ClientComponents } from './createClientComponents';
-import { SetupNetworkResult } from './setupNetwork';
+import { ClientComponents } from '@/lib/mud/createClientComponents';
+import { SetupNetworkResult } from '@/lib/mud/setupNetwork';
+import { getInstrumentKey, isOutOfBounds } from '@/lib/utils';
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
 
@@ -30,31 +32,42 @@ export function createSystemCalls(
    *   syncToRecs
    *   (https://github.com/latticexyz/mud/blob/main/templates/threejs/packages/client/src/mud/setupNetwork.ts#L75-L81).
    */
-  { worldContract, waitForTransaction, playerEntity }: SetupNetworkResult,
-  { Position }: ClientComponents,
+  { worldContract, waitForTransaction, walletClient }: SetupNetworkResult,
+  { Bounds, Position }: ClientComponents,
 ) {
-  const moveTo = async (x: number, y: number, z: number) => {
-    /*
-     * Because MoveSystem is in the root namespace, .move can be called directly
-     * on the World contract.
-     */
-    const tx = await worldContract.write.move([x, y, z]);
+  const addInstrument = async (instrument: string, x: number, y: number, z: number) => {
+    const tx = await worldContract.write.add([instrument, x, y, z]);
     await waitForTransaction(tx);
   };
 
-  const moveBy = async (deltaX: number, deltaY: number, deltaZ: number) => {
-    console.log({ Position, playerEntity });
-    const playerPosition = getComponentValue(Position, playerEntity);
+  const moveInstrument = async (index: number, x: number, y: number, z: number) => {
+    const tx = await worldContract.write.move([index, x, y, z]);
+    await waitForTransaction(tx);
+  };
 
-    if (playerPosition) {
-      await moveTo(playerPosition.x + deltaX, playerPosition.y + deltaY, playerPosition.z + deltaZ);
-    } else {
-      await moveTo(deltaX, deltaY, deltaZ);
+  const moveInstrumentBy = async (index: number, dx: number, dy: number, dz: number) => {
+    // Get position of instrument and move it
+    const position = getComponentValue(Position, getInstrumentKey(walletClient.account.address, index));
+    // Get bounds
+    const bounds = getComponentValue(Bounds, singletonEntity);
+
+    if (!position) {
+      throw new Error(`Instrument ${index} not found`);
     }
+
+    if (isOutOfBounds(position, dx, dy, dz, bounds)) {
+      throw new Error('Out of bounds');
+    }
+
+    const x = position.x + dx;
+    const y = position.y + dy;
+    const z = position.z + dz;
+    await moveInstrument(index, x, y, z);
   };
 
   return {
-    moveTo,
-    moveBy,
+    addInstrument,
+    moveInstrument,
+    moveInstrumentBy,
   };
 }

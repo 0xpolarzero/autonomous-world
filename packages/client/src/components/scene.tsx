@@ -1,50 +1,64 @@
-import { useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useComponentValue, useEntityQuery } from '@latticexyz/react';
 import { getComponentValueStrict, Has } from '@latticexyz/recs';
-import { BoxGeometry, Mesh, MeshBasicMaterial } from 'three';
-import { OrbitControls } from '@react-three/drei';
-import { useFrame, useThree } from '@react-three/fiber';
-import { useControls } from 'leva';
+import { singletonEntity } from '@latticexyz/store-sync/recs';
+import { OrbitControls, useKeyboardControls } from '@react-three/drei';
+import { button, useControls } from 'leva';
 import { Perf } from 'r3f-perf';
 
+import { Controls, map, onKeyDown } from '@/lib/config/KeyboardControls';
 import { useMUD } from '@/lib/config/MUDContext';
-import { useKeyboardMovement } from '@/lib/hooks/useKeyboardMovement';
+import { Instrument } from '@/components/instrument';
 import { Plane } from '@/components/plane';
-import { Player } from '@/components/player';
 import { Sphere } from '@/components/sphere';
 
 export const Scene = () => {
+  // Movement (state)
+  const [selectedInstr, setSelectedInstr] = useState<number | undefined>(undefined);
+  const [sub, get] = useKeyboardControls<Controls>();
+
+  // MUD (hooks)
+  const {
+    components: { Bounds, Count, Metadata, Position },
+    systemCalls: { addInstrument, moveInstrumentBy },
+  } = useMUD();
+
   // Controls
-  useKeyboardMovement();
   const { performance } = useControls('Monitoring', {
     performance: false,
   });
+  useControls('Instruments', {
+    name: 'test',
+    add: button((get) => {
+      addInstrument(get('Instruments.name'), 0, 0, 0);
+    }),
+  });
 
-  // Players
-  const {
-    components: { Position },
-    network: { playerEntity },
-  } = useMUD();
-
-  const playerPosition = useComponentValue(Position, playerEntity);
-  const players = useEntityQuery([Has(Position)]).map((entity) => {
+  // MUD (parsing)
+  const bounds = useComponentValue(Bounds, singletonEntity);
+  const count = useComponentValue(Count, singletonEntity);
+  const instruments = useEntityQuery([Has(Position)]).map((entity) => {
     const position = getComponentValueStrict(Position, entity);
+    const metadata = getComponentValueStrict(Metadata, entity);
     return {
       entity,
       position,
+      metadata,
     };
   });
 
-  useThree(({ camera }) => {
-    if (playerPosition) {
-      // camera.position.set(playerPosition.x - 5, playerPosition.y + 5, playerPosition.z + 5);
-    } else {
-      camera.position.set(-5, 5, 5);
-    }
-    camera.rotation.order = 'YXZ';
-    camera.rotation.y = -Math.PI / 4;
-    camera.rotation.x = Math.atan(-1 / Math.sqrt(2));
-  });
+  // Keyboard controls
+  useEffect(() => {
+    return sub((state) => {
+      Object.entries(state).forEach(([name, pressed]) => {
+        if (pressed && selectedInstr !== undefined) {
+          onKeyDown(name, (x, y, z) => {
+            moveInstrumentBy(selectedInstr, x, y, z);
+          });
+        }
+      });
+    });
+  }, [sub, selectedInstr]);
 
   return (
     <>
@@ -56,12 +70,24 @@ export const Scene = () => {
         <ambientLight intensity={0.2} />
 
         <Sphere />
-        <Plane position={[0, -5, 0]} />
-        {players.map((p, i) => (
-          <Player
+        <Plane
+          position={bounds ? [0, bounds.minY - 0.5, 0] : [0, -0.5, 0]}
+          scale={
+            bounds ? [bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ, bounds.maxY - bounds.minY] : [10, 10, 1]
+          }
+        />
+        <gridHelper
+          args={bounds ? [bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ] : [10, 10]}
+          position-y={bounds ? bounds.minY - 0.4 : 0}
+        />
+        {instruments.map((instr, i) => (
+          <Instrument
             key={i}
-            color={Math.floor(parseInt(p.entity) * 123456) % 16777215}
-            position={[p.position.x, p.position.y, p.position.z]}
+            name={instr.metadata.instrument}
+            isSelected={selectedInstr === i}
+            onClick={() => setSelectedInstr(selectedInstr === i ? undefined : i)}
+            onPointerMissed={() => setSelectedInstr(undefined)}
+            position={[instr.position.x, instr.position.y, instr.position.z]}
           />
         ))}
       </group>
