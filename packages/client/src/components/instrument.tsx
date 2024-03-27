@@ -7,15 +7,21 @@ import { animated, config, useSpring } from '@react-spring/three';
 interface CubeProps extends MeshProps {
   name: string;
   isSelected: boolean;
-  onClick: (event: ThreeEvent<MouseEvent>) => void;
+  isMoving: boolean;
 }
 
-export const Instrument = ({ name, isSelected, onClick, ...props }: CubeProps) => {
+export const Instrument = ({ name, isSelected, isMoving, onClick, ...props }: CubeProps) => {
   const ref = useRef<Mesh>(null);
   const [hovered, hover] = useState(false);
 
   const { scale } = useSpring({ scale: hovered ? 1.3 : 1, config: config.wobbly });
   const color = isSelected ? 'hotpink' : 'lightblue';
+
+  useFrame(() => {
+    if (isMoving && ref.current) {
+      ref.current.position.y += Math.sin(window.performance.now() / 100) * 0.01;
+    }
+  });
 
   return (
     <>
@@ -24,7 +30,6 @@ export const Instrument = ({ name, isSelected, onClick, ...props }: CubeProps) =
         castShadow
         onPointerEnter={() => hover(true)}
         onPointerLeave={() => hover(false)}
-        onClick={onClick}
         scale={scale}
         {...props}
       >

@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useComponentValue, useEntityQuery } from '@latticexyz/react';
 import { getComponentValueStrict, Has } from '@latticexyz/recs';
 import { singletonEntity } from '@latticexyz/store-sync/recs';
+import { Vector3 } from 'three';
 import { OrbitControls, useKeyboardControls } from '@react-three/drei';
 import { button, useControls } from 'leva';
 import { Perf } from 'r3f-perf';
 
-import { Controls, map, onKeyDown } from '@/lib/config/KeyboardControls';
+import { Controls, onKeyDown } from '@/lib/config/KeyboardControls';
 import { useMUD } from '@/lib/config/MUDContext';
+import { isOutOfBounds } from '@/lib/utils';
+import { DraggingControls } from '@/components/dragging-controls';
 import { Instrument } from '@/components/instrument';
 import { Plane } from '@/components/plane';
 import { Sphere } from '@/components/sphere';
@@ -15,12 +18,13 @@ import { Sphere } from '@/components/sphere';
 export const Scene = () => {
   // Movement (state)
   const [selectedInstr, setSelectedInstr] = useState<number | undefined>(undefined);
-  const [sub, get] = useKeyboardControls<Controls>();
+  const [movingInstr, setMovingInstr] = useState<number | undefined>(undefined);
+  const [placeholderPosition, setPlaceholderPosition] = useState(new Vector3());
 
   // MUD (hooks)
   const {
     components: { Bounds, Count, Metadata, Position },
-    systemCalls: { addInstrument, moveInstrumentBy },
+    systemCalls: { addInstrument, moveInstrument, moveInstrumentBy },
   } = useMUD();
 
   // Controls
@@ -33,10 +37,10 @@ export const Scene = () => {
       addInstrument(get('Instruments.name'), 0, 0, 0);
     }),
   });
+  const [sub, get] = useKeyboardControls<Controls>();
 
   // MUD (parsing)
   const bounds = useComponentValue(Bounds, singletonEntity);
-  const count = useComponentValue(Count, singletonEntity);
   const instruments = useEntityQuery([Has(Position)]).map((entity) => {
     const position = getComponentValueStrict(Position, entity);
     const metadata = getComponentValueStrict(Metadata, entity);
@@ -47,23 +51,33 @@ export const Scene = () => {
     };
   });
 
-  // Keyboard controls
+  // Keyboard controls (up/down/escape)
   useEffect(() => {
     return sub((state) => {
       Object.entries(state).forEach(([name, pressed]) => {
         if (pressed && selectedInstr !== undefined) {
           onKeyDown(name, (x, y, z) => {
-            moveInstrumentBy(selectedInstr, x, y, z);
+            if (isOutOfBounds(placeholderPosition, x, y, z, bounds)) {
+              return;
+            }
+
+            setPlaceholderPosition((prev) => new Vector3(prev.x + x, prev.y + y, prev.z + z));
           });
         }
       });
     });
-  }, [sub, selectedInstr]);
+  }, [sub, selectedInstr, placeholderPosition, bounds]);
 
   return (
     <>
       {performance && <Perf position="top-left" />}
-      <OrbitControls makeDefault />
+      <OrbitControls enableRotate={!selectedInstr} minDistance={1} maxDistance={100} />
+      <DraggingControls
+        selected={selectedInstr}
+        placeholderPosition={placeholderPosition}
+        setPlaceholderPosition={setPlaceholderPosition}
+        bounds={bounds ? { minX: bounds.minX, maxX: bounds.maxX, minZ: bounds.minZ, maxZ: bounds.maxZ } : undefined}
+      />
 
       <group>
         <directionalLight position={[-2, 2, 3]} intensity={1.5} castShadow shadow-mapSize={[1024 * 2, 1024 * 2]} />
@@ -80,13 +94,34 @@ export const Scene = () => {
           args={bounds ? [bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ] : [10, 10]}
           position-y={bounds ? bounds.minY - 0.4 : 0}
         />
+        {/* just an invisible plane for drag&drop */}
+        <Plane
+          position={bounds ? [0, bounds.minY - 0.5, 0] : [0, -0.5, 0]}
+          scale={[1000, 1000, 1]}
+          transparent
+          onPointerDown={async () => {
+            if (selectedInstr !== undefined) {
+              setSelectedInstr(undefined);
+
+              // Update position
+              setMovingInstr(selectedInstr);
+              await moveInstrument(selectedInstr, placeholderPosition.x, placeholderPosition.y, placeholderPosition.z);
+              setMovingInstr(undefined);
+            }
+          }}
+        />
         {instruments.map((instr, i) => (
           <Instrument
             key={i}
             name={instr.metadata.instrument}
             isSelected={selectedInstr === i}
-            onClick={() => setSelectedInstr(selectedInstr === i ? undefined : i)}
-            onPointerMissed={() => setSelectedInstr(undefined)}
+            isMoving={movingInstr === i}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              setSelectedInstr(i);
+              // Init placeholder position
+              setPlaceholderPosition(new Vector3(instr.position.x, instr.position.y, instr.position.z));
+            }}
             position={[instr.position.x, instr.position.y, instr.position.z]}
           />
         ))}

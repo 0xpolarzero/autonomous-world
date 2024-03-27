@@ -1,10 +1,14 @@
-import { ThreeElements } from '@react-three/fiber';
+import { MeshProps } from '@react-three/fiber';
 
-export const Plane = (props: ThreeElements['mesh']) => {
+interface PlaneProps extends MeshProps {
+  transparent?: boolean;
+}
+
+export const Plane = ({ transparent = false, ...props }: PlaneProps) => {
   return (
     <mesh receiveShadow rotation-x={-Math.PI / 2} {...props}>
       <planeGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color="white" />
+      <meshStandardMaterial color="white" transparent={transparent} opacity={transparent ? 0 : 1} />
     </mesh>
   );
 };

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
+import { KeyboardControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { Leva } from 'leva';
 import ReactDOM from 'react-dom/client';
@@ -8,7 +9,6 @@ import { Scene } from '@/components/scene';
 
 import '@/styles/globals.css';
 
-import { KeyboardControls } from '@react-three/drei';
 import mudConfig from 'contracts/mud.config';
 
 import { map } from '@/lib/config/KeyboardControls';
@@ -45,7 +45,7 @@ setup().then(async (result) => {
                 fov: 55,
                 near: 0.1,
                 far: 200,
-                position: [0, 30, 50],
+                position: [0, 40, 50],
               }}
               shadows
             >
