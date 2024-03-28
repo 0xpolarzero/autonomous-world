@@ -1,24 +1,27 @@
 import { useRef, useState } from 'react';
-import { Mesh } from 'three';
+import { Color, Mesh } from 'three';
 import { Text } from '@react-three/drei';
-import { Color, MeshProps, ThreeEvent, useFrame } from '@react-three/fiber';
+import { MeshProps, ThreeEvent, useFrame } from '@react-three/fiber';
 import { animated, config, useSpring } from '@react-spring/three';
+import { Hex } from 'viem';
 
 interface CubeProps extends MeshProps {
   name: string;
+  color: Hex;
+  hidden: boolean;
   isSelected: boolean;
-  isMoving: boolean;
+  isPending: boolean;
 }
 
-export const Instrument = ({ name, isSelected, isMoving, onClick, ...props }: CubeProps) => {
+export const Instrument = ({ name, color, hidden, isSelected, isPending, onClick, ...props }: CubeProps) => {
   const ref = useRef<Mesh>(null);
   const [hovered, hover] = useState(false);
+  const renderedColor = isSelected ? 'hotpink' : Number(color);
 
   const { scale } = useSpring({ scale: hovered ? 1.3 : 1, config: config.wobbly });
-  const color = isSelected ? 'hotpink' : 'lightblue';
 
   useFrame(() => {
-    if (isMoving && ref.current) {
+    if (isPending && ref.current) {
       ref.current.position.y += Math.sin(window.performance.now() / 100) * 0.01;
     }
   });
@@ -33,11 +36,13 @@ export const Instrument = ({ name, isSelected, isMoving, onClick, ...props }: Cu
         scale={scale}
         {...props}
       >
-        <Text color={color} position-y={2}>
-          {name}
-        </Text>
+        {hidden ? null : (
+          <Text color={renderedColor} position-y={2}>
+            {name}
+          </Text>
+        )}
         <boxGeometry args={[1.5, 1.5, 1.5]} />
-        <meshStandardMaterial color={color} />
+        <meshStandardMaterial color={renderedColor} transparent opacity={hidden ? 0.3 : 1} />
       </animated.mesh>
     </>
   );

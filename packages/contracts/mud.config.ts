@@ -17,7 +17,9 @@ export default defineWorld({
     Metadata: {
       schema: {
         id: "bytes32",
-        instrument: "string",
+        color: "bytes3",
+        hidden: "bool",
+        name: "string",
       },
       key: ["id"],
     },

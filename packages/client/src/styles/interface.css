@@ -1,0 +1,14 @@
+.interface.hints {
+  background: rgba(36, 36, 36, 0.9);
+  font-family: 'Courier New', Courier, monospace;
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  padding: 2px 8px;
+}
+
+.interface.hints .list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

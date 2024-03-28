@@ -5,6 +5,7 @@
 
 import { getComponentValue } from '@latticexyz/recs';
 import { singletonEntity } from '@latticexyz/store-sync/recs';
+import { Hex } from 'viem';
 
 import { ClientComponents } from '@/lib/mud/createClientComponents';
 import { SetupNetworkResult } from '@/lib/mud/setupNetwork';
@@ -35,8 +36,8 @@ export function createSystemCalls(
   { worldContract, waitForTransaction, walletClient }: SetupNetworkResult,
   { Bounds, Position }: ClientComponents,
 ) {
-  const addInstrument = async (instrument: string, x: number, y: number, z: number) => {
-    const tx = await worldContract.write.add([instrument, x, y, z]);
+  const addInstrument = async (name: string, color: Hex, x: number, y: number, z: number) => {
+    const tx = await worldContract.write.add([name, color, x, y, z]);
     await waitForTransaction(tx);
   };
 
@@ -45,29 +46,40 @@ export function createSystemCalls(
     await waitForTransaction(tx);
   };
 
-  const moveInstrumentBy = async (index: number, dx: number, dy: number, dz: number) => {
-    // Get position of instrument and move it
-    const position = getComponentValue(Position, getInstrumentKey(walletClient.account.address, index));
-    // Get bounds
-    const bounds = getComponentValue(Bounds, singletonEntity);
-
-    if (!position) {
-      throw new Error(`Instrument ${index} not found`);
-    }
-
-    if (isOutOfBounds(position, dx, dy, dz, bounds)) {
-      throw new Error('Out of bounds');
-    }
-
-    const x = position.x + dx;
-    const y = position.y + dy;
-    const z = position.z + dz;
-    await moveInstrument(index, x, y, z);
+  const hideInstrument = async (index: number) => {
+    const tx = await worldContract.write.hide([index]);
+    await waitForTransaction(tx);
   };
+
+  const showInstrument = async (index: number) => {
+    const tx = await worldContract.write.show([index]);
+    await waitForTransaction(tx);
+  };
+
+  // const moveInstrumentBy = async (index: number, dx: number, dy: number, dz: number) => {
+  //   // Get position of instrument and move it
+  //   const position = getComponentValue(Position, getInstrumentKey(walletClient.account.address, index));
+  //   // Get bounds
+  //   const bounds = getComponentValue(Bounds, singletonEntity);
+
+  //   if (!position) {
+  //     throw new Error(`Instrument ${index} not found`);
+  //   }
+
+  //   if (isOutOfBounds(position, dx, dy, dz, bounds)) {
+  //     throw new Error('Out of bounds');
+  //   }
+
+  //   const x = position.x + dx;
+  //   const y = position.y + dy;
+  //   const z = position.z + dz;
+  //   await moveInstrument(index, x, y, z);
+  // };
 
   return {
     addInstrument,
     moveInstrument,
-    moveInstrumentBy,
+    hideInstrument,
+    showInstrument,
   };
 }

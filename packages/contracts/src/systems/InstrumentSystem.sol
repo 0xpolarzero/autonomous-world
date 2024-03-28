@@ -2,7 +2,7 @@
 pragma solidity >=0.8.24;
 
 import {System} from "@latticexyz/world/src/System.sol";
-import {Bounds, BoundsData, Count, Metadata, Position, PositionData} from "../codegen/index.sol";
+import {Bounds, BoundsData, Count, Metadata, MetadataData, Position, PositionData} from "../codegen/index.sol";
 
 // TODO Fuzz this to check (written quickly)
 function checkBounds(BoundsData memory bounds, PositionData memory pos) pure returns (int32) {
@@ -30,7 +30,7 @@ contract InstrumentSystem is System {
     // Emit the distance from the bounds for information
     error OUT_OF_BOUNDS(int32 distance);
 
-    function add(string memory name, int32 x, int32 y, int32 z) public {
+    function add(string memory name, bytes3 color, int32 x, int32 y, int32 z) public {
         // Get the current amount of instruments, and generate an entity ID
         uint32 count = Count.get();
         bytes32 entityId = keccak256(abi.encode(_msgSender(), count));
@@ -46,7 +46,7 @@ contract InstrumentSystem is System {
 
         // Set the initial position of the instrument, and its metadata
         Position.set(entityId, position);
-        Metadata.set(entityId, name);
+        Metadata.set(entityId, MetadataData({color: color, hidden: false, name: name}));
 
         // Update the amount of instruments
         Count.set(count + 1);
@@ -68,5 +68,21 @@ contract InstrumentSystem is System {
 
         // Update the position of the instrument
         Position.set(entityId, newPosition);
+    }
+
+    function hide(uint32 index) public {
+        // Get the entity ID of the instrument
+        bytes32 entityId = keccak256(abi.encode(_msgSender(), index));
+
+        // Hide the instrument
+        Metadata.setHidden(entityId, true);
+    }
+
+    function show(uint32 index) public {
+        // Get the entity ID of the instrument
+        bytes32 entityId = keccak256(abi.encode(_msgSender(), index));
+
+        // Show the instrument
+        Metadata.setHidden(entityId, false);
     }
 }

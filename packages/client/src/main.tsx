@@ -1,11 +1,9 @@
 import React from 'react';
-import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
 import { KeyboardControls } from '@react-three/drei';
-import { Canvas } from '@react-three/fiber';
 import { Leva } from 'leva';
 import ReactDOM from 'react-dom/client';
 
-import { Scene } from '@/components/scene';
+import { Scene } from '@/components/canvas/scene';
 
 import '@/styles/globals.css';
 
@@ -34,23 +32,7 @@ setup().then(async (result) => {
                 },
               }}
             />
-            <Canvas
-              dpr={[1, 2]}
-              gl={{
-                antialias: true,
-                toneMapping: ACESFilmicToneMapping,
-                outputColorSpace: SRGBColorSpace,
-              }}
-              camera={{
-                fov: 55,
-                near: 0.1,
-                far: 200,
-                position: [0, 40, 50],
-              }}
-              shadows
-            >
-              <Scene />
-            </Canvas>
+            <Scene />
           </div>
         </KeyboardControls>
       </MUDProvider>
