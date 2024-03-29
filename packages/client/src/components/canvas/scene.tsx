@@ -9,6 +9,7 @@ import { Hex } from 'viem';
 
 import { Controls, onKeyDown } from '@/lib/config/KeyboardControls';
 import { useMUD } from '@/lib/config/MUDContext';
+import { StatusType } from '@/lib/mud/types';
 import { isOutOfBounds } from '@/lib/utils';
 import { DraggingControls } from '@/components/canvas/dragging-controls';
 import { Instrument } from '@/components/canvas/instrument';
@@ -20,12 +21,11 @@ import { InterfaceHints } from '../ui/interface-hints';
 export const Scene = () => {
   // Movement (state)
   const [selectedInstr, setSelectedInstr] = useState<number | undefined>(undefined);
-  const [pendingInstr, setPendingInstr] = useState<number | undefined>(undefined);
   const [placeholderPosition, setPlaceholderPosition] = useState(new Vector3());
 
   // MUD (hooks)
   const {
-    components: { Bounds, Count, Metadata, Position },
+    components: { Bounds, Count, Metadata, Position, Status },
     systemCalls: { moveInstrument },
   } = useMUD();
 
@@ -35,12 +35,18 @@ export const Scene = () => {
   const instruments = useEntityQuery([Has(Position)]).map((entity) => {
     const position = getComponentValueStrict(Position, entity);
     const metadata = getComponentValueStrict(Metadata, entity);
+    const status = getComponentValueStrict(Status, entity);
+
     return {
       entity,
       position,
       metadata,
+      status,
     };
   });
+
+  // Read statuses to listen for changes (or it won't re-render on status change)
+  useEntityQuery([Has(Status)]);
 
   const [sub, get] = useKeyboardControls<Controls>();
 
@@ -61,12 +67,7 @@ export const Scene = () => {
     });
   }, [sub, selectedInstr, placeholderPosition, bounds]);
 
-  // Helpers
-  const wrapPending = async (instr: number, action: () => Promise<void>) => {
-    setPendingInstr(instr);
-    await action();
-    setPendingInstr(undefined);
-  };
+  console.log(instruments);
 
   return (
     <>
@@ -91,7 +92,6 @@ export const Scene = () => {
           count={count?.value}
           setSelectedInstr={setSelectedInstr}
           setPlaceholderPosition={setPlaceholderPosition}
-          wrapPending={wrapPending}
         />
         <OrbitControls enableRotate={!selectedInstr} minDistance={1} maxDistance={100} />
         <DraggingControls
@@ -125,14 +125,12 @@ export const Scene = () => {
                 setSelectedInstr(undefined);
 
                 // Update position
-                wrapPending(selectedInstr, async () => {
-                  await moveInstrument(
-                    selectedInstr,
-                    placeholderPosition.x,
-                    placeholderPosition.y,
-                    placeholderPosition.z,
-                  );
-                });
+                await moveInstrument(
+                  selectedInstr,
+                  placeholderPosition.x,
+                  placeholderPosition.y,
+                  placeholderPosition.z,
+                );
               }
             }}
           />
@@ -141,9 +139,8 @@ export const Scene = () => {
               key={i}
               name={instr.metadata.name}
               color={instr.metadata.color as Hex}
-              hidden={instr.metadata.hidden}
+              active={instr.status.value === StatusType.Active}
               isSelected={selectedInstr === i}
-              isPending={pendingInstr === i}
               onPointerDown={(e) => {
                 e.stopPropagation();
                 setSelectedInstr(i);
@@ -155,7 +152,7 @@ export const Scene = () => {
           ))}
         </group>
       </Canvas>
-      <InterfaceHints selectedInstr={selectedInstr} pending={pendingInstr !== undefined} />
+      <InterfaceHints selectedInstr={selectedInstr} />
     </>
   );
 };

@@ -9,13 +9,18 @@
  * an onchain component.
  */
 
-import { SetupNetworkResult } from './setupNetwork';
+import { overridableComponent } from '@latticexyz/recs';
+
+import { SetupNetworkResult } from '@/lib/mud/setupNetwork';
 
 export type ClientComponents = ReturnType<typeof createClientComponents>;
 
 export function createClientComponents({ components }: SetupNetworkResult) {
   return {
     ...components,
-    // add your client components or overrides here
+    Count: overridableComponent(components.Count),
+    Position: overridableComponent(components.Position),
+    Metadata: overridableComponent(components.Metadata),
+    Status: overridableComponent(components.Status),
   };
 }

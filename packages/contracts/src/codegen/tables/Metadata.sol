@@ -18,7 +18,6 @@ import { ResourceId } from "@latticexyz/store/src/ResourceId.sol";
 
 struct MetadataData {
   bytes3 color;
-  bool hidden;
   string name;
 }
 
@@ -27,12 +26,12 @@ library Metadata {
   ResourceId constant _tableId = ResourceId.wrap(0x746200000000000000000000000000004d657461646174610000000000000000);
 
   FieldLayout constant _fieldLayout =
-    FieldLayout.wrap(0x0004020103010000000000000000000000000000000000000000000000000000);
+    FieldLayout.wrap(0x0003010103000000000000000000000000000000000000000000000000000000);
 
   // Hex-encoded key schema of (bytes32)
   Schema constant _keySchema = Schema.wrap(0x002001005f000000000000000000000000000000000000000000000000000000);
-  // Hex-encoded value schema of (bytes3, bool, string)
-  Schema constant _valueSchema = Schema.wrap(0x000402014260c500000000000000000000000000000000000000000000000000);
+  // Hex-encoded value schema of (bytes3, string)
+  Schema constant _valueSchema = Schema.wrap(0x0003010142c50000000000000000000000000000000000000000000000000000);
 
   /**
    * @notice Get the table's key field names.
@@ -48,10 +47,9 @@ library Metadata {
    * @return fieldNames An array of strings with the names of value fields.
    */
   function getFieldNames() internal pure returns (string[] memory fieldNames) {
-    fieldNames = new string[](3);
+    fieldNames = new string[](2);
     fieldNames[0] = "color";
-    fieldNames[1] = "hidden";
-    fieldNames[2] = "name";
+    fieldNames[1] = "name";
   }
 
   /**
@@ -108,48 +106,6 @@ library Metadata {
     _keyTuple[0] = id;
 
     StoreCore.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((color)), _fieldLayout);
-  }
-
-  /**
-   * @notice Get hidden.
-   */
-  function getHidden(bytes32 id) internal view returns (bool hidden) {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = id;
-
-    bytes32 _blob = StoreSwitch.getStaticField(_tableId, _keyTuple, 1, _fieldLayout);
-    return (_toBool(uint8(bytes1(_blob))));
-  }
-
-  /**
-   * @notice Get hidden.
-   */
-  function _getHidden(bytes32 id) internal view returns (bool hidden) {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = id;
-
-    bytes32 _blob = StoreCore.getStaticField(_tableId, _keyTuple, 1, _fieldLayout);
-    return (_toBool(uint8(bytes1(_blob))));
-  }
-
-  /**
-   * @notice Set hidden.
-   */
-  function setHidden(bytes32 id, bool hidden) internal {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = id;
-
-    StoreSwitch.setStaticField(_tableId, _keyTuple, 1, abi.encodePacked((hidden)), _fieldLayout);
-  }
-
-  /**
-   * @notice Set hidden.
-   */
-  function _setHidden(bytes32 id, bool hidden) internal {
-    bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = id;
-
-    StoreCore.setStaticField(_tableId, _keyTuple, 1, abi.encodePacked((hidden)), _fieldLayout);
   }
 
   /**
@@ -347,8 +303,8 @@ library Metadata {
   /**
    * @notice Set the full data using individual values.
    */
-  function set(bytes32 id, bytes3 color, bool hidden, string memory name) internal {
-    bytes memory _staticData = encodeStatic(color, hidden);
+  function set(bytes32 id, bytes3 color, string memory name) internal {
+    bytes memory _staticData = encodeStatic(color);
 
     EncodedLengths _encodedLengths = encodeLengths(name);
     bytes memory _dynamicData = encodeDynamic(name);
@@ -362,8 +318,8 @@ library Metadata {
   /**
    * @notice Set the full data using individual values.
    */
-  function _set(bytes32 id, bytes3 color, bool hidden, string memory name) internal {
-    bytes memory _staticData = encodeStatic(color, hidden);
+  function _set(bytes32 id, bytes3 color, string memory name) internal {
+    bytes memory _staticData = encodeStatic(color);
 
     EncodedLengths _encodedLengths = encodeLengths(name);
     bytes memory _dynamicData = encodeDynamic(name);
@@ -378,7 +334,7 @@ library Metadata {
    * @notice Set the full data using the data struct.
    */
   function set(bytes32 id, MetadataData memory _table) internal {
-    bytes memory _staticData = encodeStatic(_table.color, _table.hidden);
+    bytes memory _staticData = encodeStatic(_table.color);
 
     EncodedLengths _encodedLengths = encodeLengths(_table.name);
     bytes memory _dynamicData = encodeDynamic(_table.name);
@@ -393,7 +349,7 @@ library Metadata {
    * @notice Set the full data using the data struct.
    */
   function _set(bytes32 id, MetadataData memory _table) internal {
-    bytes memory _staticData = encodeStatic(_table.color, _table.hidden);
+    bytes memory _staticData = encodeStatic(_table.color);
 
     EncodedLengths _encodedLengths = encodeLengths(_table.name);
     bytes memory _dynamicData = encodeDynamic(_table.name);
@@ -407,10 +363,8 @@ library Metadata {
   /**
    * @notice Decode the tightly packed blob of static data using this table's field layout.
    */
-  function decodeStatic(bytes memory _blob) internal pure returns (bytes3 color, bool hidden) {
+  function decodeStatic(bytes memory _blob) internal pure returns (bytes3 color) {
     color = (Bytes.getBytes3(_blob, 0));
-
-    hidden = (_toBool(uint8(Bytes.getBytes1(_blob, 3))));
   }
 
   /**
@@ -439,7 +393,7 @@ library Metadata {
     EncodedLengths _encodedLengths,
     bytes memory _dynamicData
   ) internal pure returns (MetadataData memory _table) {
-    (_table.color, _table.hidden) = decodeStatic(_staticData);
+    (_table.color) = decodeStatic(_staticData);
 
     (_table.name) = decodeDynamic(_encodedLengths, _dynamicData);
   }
@@ -468,8 +422,8 @@ library Metadata {
    * @notice Tightly pack static (fixed length) data using this table's schema.
    * @return The static data, encoded into a sequence of bytes.
    */
-  function encodeStatic(bytes3 color, bool hidden) internal pure returns (bytes memory) {
-    return abi.encodePacked(color, hidden);
+  function encodeStatic(bytes3 color) internal pure returns (bytes memory) {
+    return abi.encodePacked(color);
   }
 
   /**
@@ -497,12 +451,8 @@ library Metadata {
    * @return The lengths of the dynamic fields (packed into a single bytes32 value).
    * @return The dynamic (variable length) data, encoded into a sequence of bytes.
    */
-  function encode(
-    bytes3 color,
-    bool hidden,
-    string memory name
-  ) internal pure returns (bytes memory, EncodedLengths, bytes memory) {
-    bytes memory _staticData = encodeStatic(color, hidden);
+  function encode(bytes3 color, string memory name) internal pure returns (bytes memory, EncodedLengths, bytes memory) {
+    bytes memory _staticData = encodeStatic(color);
 
     EncodedLengths _encodedLengths = encodeLengths(name);
     bytes memory _dynamicData = encodeDynamic(name);
@@ -518,17 +468,5 @@ library Metadata {
     _keyTuple[0] = id;
 
     return _keyTuple;
-  }
-}
-
-/**
- * @notice Cast a value to a bool.
- * @dev Boolean values are encoded as uint8 (1 = true, 0 = false), but Solidity doesn't allow casting between uint8 and bool.
- * @param value The uint8 value to convert.
- * @return result The boolean value.
- */
-function _toBool(uint8 value) pure returns (bool result) {
-  assembly {
-    result := value
   }
 }

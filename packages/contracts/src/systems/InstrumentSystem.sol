@@ -2,7 +2,8 @@
 pragma solidity >=0.8.24;
 
 import {System} from "@latticexyz/world/src/System.sol";
-import {Bounds, BoundsData, Count, Metadata, MetadataData, Position, PositionData} from "../codegen/index.sol";
+import {Bounds, BoundsData, Count, Metadata, MetadataData, Position, PositionData, Status} from "../codegen/index.sol";
+import {StatusType} from "../codegen/common.sol";
 
 // TODO Fuzz this to check (written quickly)
 function checkBounds(BoundsData memory bounds, PositionData memory pos) pure returns (int32) {
@@ -46,7 +47,8 @@ contract InstrumentSystem is System {
 
         // Set the initial position of the instrument, and its metadata
         Position.set(entityId, position);
-        Metadata.set(entityId, MetadataData({color: color, hidden: false, name: name}));
+        Metadata.set(entityId, MetadataData({color: color, name: name}));
+        Status.set(entityId, StatusType.Active);
 
         // Update the amount of instruments
         Count.set(count + 1);
@@ -70,19 +72,11 @@ contract InstrumentSystem is System {
         Position.set(entityId, newPosition);
     }
 
-    function hide(uint32 index) public {
+    function setStatus(uint32 index, StatusType status) public {
         // Get the entity ID of the instrument
         bytes32 entityId = keccak256(abi.encode(_msgSender(), index));
 
-        // Hide the instrument
-        Metadata.setHidden(entityId, true);
-    }
-
-    function show(uint32 index) public {
-        // Get the entity ID of the instrument
-        bytes32 entityId = keccak256(abi.encode(_msgSender(), index));
-
-        // Show the instrument
-        Metadata.setHidden(entityId, false);
+        // Enable or disable the instrument
+        Status.set(entityId, status);
     }
 }
