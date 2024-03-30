@@ -10,7 +10,7 @@ import { Hex } from 'viem';
 
 import { ClientComponents } from '@/lib/mud/createClientComponents';
 import { SetupNetworkResult } from '@/lib/mud/setupNetwork';
-import { StatusType } from '@/lib/mud/types';
+import { InstrumentType, StatusType } from '@/lib/mud/types';
 import { getInstrumentKey, isOutOfBounds } from '@/lib/utils';
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -40,7 +40,15 @@ export function createSystemCalls(
 ) {
   const getEntityId = (index: number) => getInstrumentKey(walletClient.account.address, index);
 
-  const addInstrument = async (index: number, name: string, color: Hex, x: number, y: number, z: number) => {
+  const addInstrument = async (
+    index: number,
+    name: string,
+    color: Hex,
+    x: number,
+    y: number,
+    z: number,
+    instrument: InstrumentType,
+  ) => {
     // Overrides
     const countId = uuid();
     const positionId = uuid();
@@ -66,7 +74,7 @@ export function createSystemCalls(
 
     // Tx
     try {
-      const tx = await worldContract.write.add([name, color, x, y, z]);
+      const tx = await worldContract.write.add([name, color, x, y, z, instrument]);
       await waitForTransaction(tx);
     } finally {
       // Clean up

@@ -11,21 +11,22 @@ import { Controls, onKeyDown } from '@/lib/config/KeyboardControls';
 import { useMUD } from '@/lib/config/MUDContext';
 import { StatusType } from '@/lib/mud/types';
 import { isOutOfBounds } from '@/lib/utils';
+import { InterfaceControls } from '@/components/ui/interface-controls';
+import { InterfaceHints } from '@/components/ui/interface-hints';
 import { DraggingControls } from '@/components/canvas/dragging-controls';
 import { Instrument } from '@/components/canvas/instrument';
 import { Plane } from '@/components/canvas/plane';
 
-import { InterfaceControls } from '../ui/interface-controls';
-import { InterfaceHints } from '../ui/interface-hints';
-
 export const Scene = () => {
+  // Audio context
+  const [clicked, setClicked] = useState(false);
   // Movement (state)
   const [selectedInstr, setSelectedInstr] = useState<number | undefined>(undefined);
   const [placeholderPosition, setPlaceholderPosition] = useState(new Vector3());
 
   // MUD (hooks)
   const {
-    components: { Bounds, Count, Metadata, Position, Status },
+    components: { Bounds, Count, Instrument: InstrumentType, Metadata, Position, Status },
     systemCalls: { moveInstrument },
   } = useMUD();
 
@@ -35,12 +36,14 @@ export const Scene = () => {
   const instruments = useEntityQuery([Has(Position)]).map((entity) => {
     const position = getComponentValueStrict(Position, entity);
     const metadata = getComponentValueStrict(Metadata, entity);
+    const instrumentType = getComponentValueStrict(InstrumentType, entity);
     const status = getComponentValueStrict(Status, entity);
 
     return {
       entity,
       position,
       metadata,
+      type: instrumentType,
       status,
     };
   });
@@ -66,8 +69,6 @@ export const Scene = () => {
       });
     });
   }, [sub, selectedInstr, placeholderPosition, bounds]);
-
-  console.log(instruments);
 
   return (
     <>
@@ -137,10 +138,13 @@ export const Scene = () => {
           {instruments.map((instr, i) => (
             <Instrument
               key={i}
+              instrumentType={instr.type.value}
               name={instr.metadata.name}
               color={instr.metadata.color as Hex}
               active={instr.status.value === StatusType.Active}
               isSelected={selectedInstr === i}
+              audioInitialized={clicked}
+              count={count?.value || 0}
               onPointerDown={(e) => {
                 e.stopPropagation();
                 setSelectedInstr(i);
@@ -153,6 +157,31 @@ export const Scene = () => {
         </group>
       </Canvas>
       <InterfaceHints selectedInstr={selectedInstr} />
+      {clicked ? null : (
+        <div
+          onClick={() => setClicked(true)}
+          className="interface"
+          style={{
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            cursor: 'pointer',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              color: 'white',
+            }}
+          >
+            Click to start
+          </div>
+        </div>
+      )}
     </>
   );
 };

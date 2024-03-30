@@ -7,4 +7,5 @@ import { Bounds, BoundsData } from "./tables/Bounds.sol";
 import { Count } from "./tables/Count.sol";
 import { Position, PositionData } from "./tables/Position.sol";
 import { Metadata, MetadataData } from "./tables/Metadata.sol";
+import { Instrument } from "./tables/Instrument.sol";
 import { Status } from "./tables/Status.sol";

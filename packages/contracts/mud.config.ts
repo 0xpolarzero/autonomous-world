@@ -2,6 +2,7 @@ import { defineWorld } from "@latticexyz/world";
 
 export default defineWorld({
   enums: {
+    InstrumentType: ["Voice", "Harp", "HangDrum", "Glockenspiel"],
     StatusType: ["Inactive", "Active"],
   },
   tables: {
@@ -43,6 +44,8 @@ export default defineWorld({
       },
       key: ["id"],
     },
+    // The actualy instrument played by an entity
+    Instrument: "InstrumentType",
     // The status of an instrument (e.g. active: not hidden, playing)
     Status: "StatusType",
   },

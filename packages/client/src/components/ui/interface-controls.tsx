@@ -5,7 +5,7 @@ import { button, folder, useControls } from 'leva';
 import { Perf } from 'r3f-perf';
 
 import { useMUD } from '@/lib/config/MUDContext';
-import { StatusType } from '@/lib/mud/types';
+import { instrumentOptions, InstrumentType, StatusType } from '@/lib/mud/types';
 
 type InterfaceControlsProps = {
   instruments: Entity & { metadata: { name: string }; position: Vector3 }[];
@@ -51,6 +51,7 @@ export const InterfaceControls: FC<InterfaceControlsProps> = ({
   useControls(
     'Instruments.New',
     {
+      instrument: { options: instrumentOptions },
       name: 'instrument name',
       color: '#ff0000',
       'add instrument': button((get) => {
@@ -61,6 +62,7 @@ export const InterfaceControls: FC<InterfaceControlsProps> = ({
           0,
           0,
           0,
+          get('Instruments.New.instrument'),
         );
       }),
     },
