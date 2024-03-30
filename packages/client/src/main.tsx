@@ -3,7 +3,7 @@ import { KeyboardControls } from '@react-three/drei';
 import { Leva } from 'leva';
 import ReactDOM from 'react-dom/client';
 
-import { Scene } from '@/components/canvas/scene';
+import { Scene } from '@/components/scene';
 
 import '@/styles/globals.css';
 

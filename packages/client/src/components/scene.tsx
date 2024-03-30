@@ -1,25 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useComponentValue, useEntityQuery } from '@latticexyz/react';
 import { getComponentValueStrict, Has } from '@latticexyz/recs';
 import { singletonEntity } from '@latticexyz/store-sync/recs';
 import { ACESFilmicToneMapping, SRGBColorSpace, Vector3 } from 'three';
-import { OrbitControls, useKeyboardControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { Hex } from 'viem';
 
-import { Controls, onKeyDown } from '@/lib/config/KeyboardControls';
 import { useMUD } from '@/lib/config/MUDContext';
 import { StatusType } from '@/lib/mud/types';
-import { isOutOfBounds } from '@/lib/utils';
-import { InterfaceControls } from '@/components/ui/interface-controls';
-import { InterfaceHints } from '@/components/ui/interface-hints';
-import { DraggingControls } from '@/components/canvas/dragging-controls';
-import { Instrument } from '@/components/canvas/instrument';
-import { Plane } from '@/components/canvas/plane';
+import { Instrument } from '@/components/instrument';
+import { Plane } from '@/components/plane';
+import { Systems } from '@/components/systems';
+import { UI } from '@/components/ui';
 
 export const Scene = () => {
-  // Audio context
-  const [clicked, setClicked] = useState(false);
   // Movement (state)
   const [selectedInstr, setSelectedInstr] = useState<number | undefined>(undefined);
   const [placeholderPosition, setPlaceholderPosition] = useState(new Vector3());
@@ -40,35 +34,15 @@ export const Scene = () => {
     const status = getComponentValueStrict(Status, entity);
 
     return {
-      entity,
-      position,
+      position: new Vector3(position.x, position.y, position.z),
       metadata,
-      type: instrumentType,
-      status,
+      type: instrumentType.value,
+      status: status.value,
     };
   });
 
   // Read statuses to listen for changes (or it won't re-render on status change)
   useEntityQuery([Has(Status)]);
-
-  const [sub, get] = useKeyboardControls<Controls>();
-
-  // Keyboard controls (up/down/escape)
-  useEffect(() => {
-    return sub((state) => {
-      Object.entries(state).forEach(([name, pressed]) => {
-        if (pressed && selectedInstr !== undefined) {
-          onKeyDown(name, (x, y, z) => {
-            if (isOutOfBounds(placeholderPosition, x, y, z, bounds)) {
-              return;
-            }
-
-            setPlaceholderPosition((prev) => new Vector3(prev.x + x, prev.y + y, prev.z + z));
-          });
-        }
-      });
-    });
-  }, [sub, selectedInstr, placeholderPosition, bounds]);
 
   return (
     <>
@@ -87,21 +61,6 @@ export const Scene = () => {
         }}
         shadows
       >
-        <InterfaceControls
-          // @ts-ignore
-          instruments={instruments}
-          count={count?.value}
-          setSelectedInstr={setSelectedInstr}
-          setPlaceholderPosition={setPlaceholderPosition}
-        />
-        <OrbitControls enableRotate={!selectedInstr} minDistance={1} maxDistance={100} />
-        <DraggingControls
-          selected={selectedInstr}
-          placeholderPosition={placeholderPosition}
-          setPlaceholderPosition={setPlaceholderPosition}
-          bounds={bounds ? { minX: bounds.minX, maxX: bounds.maxX, minZ: bounds.minZ, maxZ: bounds.maxZ } : undefined}
-        />
-
         <group>
           <directionalLight position={[-2, 2, 3]} intensity={1.5} castShadow shadow-mapSize={[1024 * 2, 1024 * 2]} />
           <ambientLight intensity={0.2} />
@@ -138,12 +97,12 @@ export const Scene = () => {
           {instruments.map((instr, i) => (
             <Instrument
               key={i}
-              instrumentType={instr.type.value}
+              index={i}
+              instrumentType={instr.type}
               name={instr.metadata.name}
               color={instr.metadata.color as Hex}
-              active={instr.status.value === StatusType.Active}
+              active={instr.status === StatusType.Active}
               isSelected={selectedInstr === i}
-              audioInitialized={clicked}
               count={count?.value || 0}
               onPointerDown={(e) => {
                 e.stopPropagation();
@@ -151,37 +110,23 @@ export const Scene = () => {
                 // Init placeholder position
                 setPlaceholderPosition(new Vector3(instr.position.x, instr.position.y, instr.position.z));
               }}
-              position={[instr.position.x, instr.position.y, instr.position.z]}
+              position={instr.position}
             />
           ))}
         </group>
+
+        <Systems
+          instruments={instruments}
+          placeholderPosition={placeholderPosition}
+          selectedInstr={selectedInstr}
+          count={count?.value}
+          bounds={bounds}
+          setSelectedInstr={setSelectedInstr}
+          setPlaceholderPosition={setPlaceholderPosition}
+        />
       </Canvas>
-      <InterfaceHints selectedInstr={selectedInstr} />
-      {clicked ? null : (
-        <div
-          onClick={() => setClicked(true)}
-          className="interface"
-          style={{
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            cursor: 'pointer',
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              color: 'white',
-            }}
-          >
-            Click to start
-          </div>
-        </div>
-      )}
+
+      <UI selectedInstr={selectedInstr} />
     </>
   );
 };

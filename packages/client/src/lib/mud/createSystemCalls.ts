@@ -36,7 +36,7 @@ export function createSystemCalls(
    *   (https://github.com/latticexyz/mud/blob/main/templates/threejs/packages/client/src/mud/setupNetwork.ts#L75-L81).
    */
   { worldContract, waitForTransaction, walletClient }: SetupNetworkResult,
-  { Count, Metadata, Position, Status }: ClientComponents,
+  { Count, Instrument, Metadata, Position, Status }: ClientComponents,
 ) {
   const getEntityId = (index: number) => getInstrumentKey(walletClient.account.address, index);
 
@@ -51,21 +51,26 @@ export function createSystemCalls(
   ) => {
     // Overrides
     const countId = uuid();
-    const positionId = uuid();
+    const instrumentId = uuid();
     const metadataId = uuid();
+    const positionId = uuid();
     const statusId = uuid();
 
     Count.addOverride(countId, {
       entity: singletonEntity,
       value: { value: index + 1 },
     });
-    Position.addOverride(positionId, {
+    Instrument.addOverride(instrumentId, {
       entity: getEntityId(index),
-      value: { x, y, z },
+      value: { value: instrument },
     });
     Metadata.addOverride(metadataId, {
       entity: getEntityId(index),
       value: { name, color },
+    });
+    Position.addOverride(positionId, {
+      entity: getEntityId(index),
+      value: { x, y, z },
     });
     Status.addOverride(statusId, {
       entity: getEntityId(index),
@@ -79,9 +84,10 @@ export function createSystemCalls(
     } finally {
       // Clean up
       Count.removeOverride(countId);
-      Position.removeOverride(positionId);
+      Instrument.removeOverride(instrumentId);
       Metadata.removeOverride(metadataId);
       Status.removeOverride(statusId);
+      Position.removeOverride(positionId);
     }
   };
 

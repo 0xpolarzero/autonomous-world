@@ -19,8 +19,9 @@ export function createClientComponents({ components }: SetupNetworkResult) {
   return {
     ...components,
     Count: overridableComponent(components.Count),
-    Position: overridableComponent(components.Position),
+    Instrument: overridableComponent(components.Instrument),
     Metadata: overridableComponent(components.Metadata),
+    Position: overridableComponent(components.Position),
     Status: overridableComponent(components.Status),
   };
 }
