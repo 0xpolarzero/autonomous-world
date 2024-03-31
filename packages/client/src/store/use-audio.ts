@@ -2,25 +2,27 @@ import { Vector3 } from 'three';
 import Wad from 'web-audio-daw';
 import { create } from 'zustand';
 
-import { instrumentFolders, InstrumentType, notes } from '@/lib/mud/types';
+import { AudioRef, beats, instrumentFolders, InstrumentType, notes, precision } from '@/lib/mud/types';
 
 type AudioStore = {
-  audioRefs: Record<number, any[]>; // index of the instrument -> audio refs
+  audioRefs: Record<number, AudioRef[]>; // index of the instrument -> audio refs
   initialized: boolean;
   currentTick: number;
 
+  partitions: Record<number, (typeof notes)[]>; // index of the instrument -> notes
+
   initAudio: () => void;
   createAudioRefs: (index: number, instrument: InstrumentType, position: Vector3) => void;
-
   updateAudioPosition: (index: number, position: Vector3) => void;
+
+  toggleNote: (instrumentIndex: number, partitionIndex: number, note: (typeof notes)[number]) => void;
 };
 
-const beats = 16;
 const bpm = 120;
-const precision = 4; // 1/4th notes
 
 export const useAudio = create<AudioStore>((set, get) => ({
   audioRefs: {},
+  partitions: {},
   initialized: false,
   currentTick: 0,
 
@@ -42,7 +44,7 @@ export const useAudio = create<AudioStore>((set, get) => ({
   },
 
   createAudioRefs: (index, instrument, position) => {
-    let { audioRefs } = get();
+    let { audioRefs, partitions } = get();
     if (!audioRefs[index]) audioRefs[index] = [];
 
     notes.forEach((note) => {
@@ -56,6 +58,12 @@ export const useAudio = create<AudioStore>((set, get) => ({
       audioRefs[index].push({ note, audio });
     });
 
+    // Init partition as well
+    if (!partitions[index])
+      set((state) => ({
+        partitions: { ...state.partitions, [index]: Array.from({ length: beats * precision }, () => []) },
+      }));
+
     set({ audioRefs });
   },
 
@@ -68,5 +76,18 @@ export const useAudio = create<AudioStore>((set, get) => ({
     });
 
     set({ audioRefs });
+  },
+
+  toggleNote: (instrumentIndex, partitionIndex, note) => {
+    let { partitions } = get();
+
+    let partition = partitions[instrumentIndex];
+    if (partition[partitionIndex].includes(note)) {
+      partition[partitionIndex] = partition[partitionIndex].filter((n) => n !== note);
+    } else {
+      partition[partitionIndex].push(note);
+    }
+
+    set({ partitions });
   },
 }));

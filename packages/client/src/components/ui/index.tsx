@@ -1,13 +1,18 @@
-import { FC } from 'react';
+import { FC, useState } from 'react';
 import { useAudio } from '@/store/use-audio';
 
-import { InterfaceHints } from './interface-hints';
+import { InstrumentEntity } from '@/lib/mud/types';
+import { DAW } from '@/components/ui/daw';
+import { InterfaceHints } from '@/components/ui/interface-hints';
 
 type UIProps = {
+  instruments: InstrumentEntity[];
   selectedInstr?: number;
 };
 
-export const UI: FC<UIProps> = ({ selectedInstr }) => {
+export const UI: FC<UIProps> = ({ instruments, selectedInstr }) => {
+  const [showDaw, setShowDaw] = useState(false);
+
   // Audio
   const { initialized, initAudio } = useAudio((state) => ({
     initialized: state.initialized,
@@ -17,29 +22,22 @@ export const UI: FC<UIProps> = ({ selectedInstr }) => {
   return (
     <>
       <InterfaceHints selectedInstr={selectedInstr} />
-      {initialized ? null : (
+      {initialized && instruments.length > 0 ? (
+        <>
+          <div
+            onClick={() => setShowDaw(!showDaw)}
+            className="bg-overlay absolute left-4 top-4 cursor-pointer px-2 py-1 font-mono text-sm"
+          >
+            {showDaw ? '' : '> Show DAW'}
+          </div>
+          {showDaw ? <DAW instruments={instruments} close={() => setShowDaw(false)} /> : null}
+        </>
+      ) : (
         <div
           onClick={initAudio}
-          className="interface"
-          style={{
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            cursor: 'pointer',
-          }}
+          className="bg-overlay absolute left-0 top-0 flex h-full w-full cursor-pointer items-center justify-center font-mono text-sm"
         >
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              color: 'white',
-            }}
-          >
-            Click to start
-          </div>
+          Click to start
         </div>
       )}
     </>

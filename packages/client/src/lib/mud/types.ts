@@ -1,5 +1,6 @@
 import { Entity } from '@latticexyz/recs';
 import { Vector3 } from 'three';
+import Wad from 'web-audio-daw';
 
 /* ------------------------------- INSTRUMENTS ------------------------------ */
 export type InstrumentEntity = {
@@ -44,9 +45,12 @@ export enum StatusType {
 }
 
 /* ---------------------------------- AUDIO --------------------------------- */
-export type AudioRef = { note: string; audio: any };
+export type AudioRef = { note: string; audio: (typeof Wad)['allWads'][number] };
 
 /* ---------------------------------- NOTES --------------------------------- */
+export const beats = 16;
+export const precision = 4; // 1/4th notes
+
 // c3 to g5
 export const notes = [
   'c3',

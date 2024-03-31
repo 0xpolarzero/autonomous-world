@@ -126,7 +126,7 @@ export const Scene = () => {
         />
       </Canvas>
 
-      <UI selectedInstr={selectedInstr} />
+      <UI instruments={instruments} selectedInstr={selectedInstr} />
     </>
   );
 };

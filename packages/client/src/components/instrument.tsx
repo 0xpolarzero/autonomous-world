@@ -7,7 +7,7 @@ import { animated, config, useSpring } from '@react-spring/three';
 import { Hex } from 'viem';
 import Wad from 'web-audio-daw';
 
-import { instrumentNames, InstrumentType } from '@/lib/mud/types';
+import { instrumentNames, InstrumentType, notes } from '@/lib/mud/types';
 
 interface CubeProps extends MeshProps {
   index: number;
@@ -19,73 +19,6 @@ interface CubeProps extends MeshProps {
   count: number;
 }
 
-const partition = [
-  ['c3', 'd-3', 'g3'],
-  ['c-3'],
-  ['d3'],
-  ['d-3'],
-  ['e3'],
-  ['f3'],
-  ['f-3'],
-  ['g3'],
-  ['g-3'],
-  ['a3'],
-  ['a-3'],
-  ['b3'],
-  ['c4'],
-  ['c-4'],
-  ['d4'],
-  ['d-4'],
-  ['e4'],
-  ['f4'],
-  ['f-4'],
-  ['g4'],
-  ['g-4'],
-  ['a4'],
-  ['a-4'],
-  ['b4'],
-  ['c5'],
-  ['c-5'],
-  ['d5'],
-  ['d-5'],
-  ['e5'],
-  ['f5'],
-  ['f-5'],
-  ['g5'],
-  ['c3'],
-  ['c-3'],
-  ['d3'],
-  ['d-3'],
-  ['e3'],
-  ['f3'],
-  ['f-3'],
-  ['g3'],
-  ['g-3'],
-  ['a3'],
-  ['a-3'],
-  ['b3'],
-  ['c4'],
-  ['c-4'],
-  ['d4'],
-  ['d-4'],
-  ['e4'],
-  ['f4'],
-  ['f-4'],
-  ['g4'],
-  ['g-4'],
-  ['a4'],
-  ['a-4'],
-  ['b4'],
-  ['c5'],
-  ['c-5'],
-  ['d5'],
-  ['d-5'],
-  ['e5'],
-  ['f5'],
-  ['f-5'],
-  ['g5'],
-];
-
 export const Instrument = ({ index, instrumentType, name, color, active, isSelected, count, ...props }: CubeProps) => {
   const ref = useRef<Mesh>(null);
   const [hovered, hover] = useState(false);
@@ -93,13 +26,16 @@ export const Instrument = ({ index, instrumentType, name, color, active, isSelec
 
   const { scale } = useSpring({ scale: hovered ? 1.3 : 1, config: config.wobbly });
 
-  const { audioRefs, initialized, currentTick, createAudioRefs, updateAudioPosition } = useAudio((state) => ({
-    audioRefs: state.audioRefs,
-    initialized: state.initialized,
-    currentTick: state.currentTick,
-    createAudioRefs: state.createAudioRefs,
-    updateAudioPosition: state.updateAudioPosition,
-  }));
+  const { audioRefs, initialized, currentTick, partitions, createAudioRefs, updateAudioPosition } = useAudio(
+    (state) => ({
+      audioRefs: state.audioRefs,
+      initialized: state.initialized,
+      currentTick: state.currentTick,
+      partitions: state.partitions,
+      createAudioRefs: state.createAudioRefs,
+      updateAudioPosition: state.updateAudioPosition,
+    }),
+  );
 
   // Create audio objects on initialization
   useEffect(() => {
@@ -118,11 +54,11 @@ export const Instrument = ({ index, instrumentType, name, color, active, isSelec
 
   // At each tick, play a note it if it's present in the partition array at the current tick
   useEffect(() => {
-    if (initialized && active) {
-      const note = partition[currentTick];
-      if (note) {
+    if (initialized && active && partitions[index]) {
+      const notes = partitions[index][currentTick];
+      if (notes) {
         audioRefs[index].forEach((audioRef) => {
-          if (note.includes(audioRef.note)) {
+          if (notes.includes(audioRef.note)) {
             audioRef.audio.play();
           }
         });
